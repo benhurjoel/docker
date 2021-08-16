@@ -85,6 +85,17 @@ RUN chmod a+x,o-w ${PS_INSTALL_FOLDER}/pwsh \
             Start-Sleep -Seconds 6 ; \
           }"
 
+
+# Set PowerShell to be the shell to execute PS Cmdlets
+SHELL [ "pwsh", "-command" ]
+
+# Install Az and Az.Automation modules
+
+RUN  Install-Module -Name Az -Repository PSGallery -Force
+RUN  Install-Module -Name Az.Automation -Repository PSGallery -Force
+
+
 # Use PowerShell as the default shell
 # Use array to avoid Docker prepending /bin/sh -c
+
 CMD [ "pwsh" ]
