@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS installer-env
+FROM ubuntu:18.04 AS installer-base
 
 # Define Args for the needed to add the package
 ARG PS_VERSION=7.1.3
@@ -21,13 +21,13 @@ RUN mkdir -p ${PS_INSTALL_FOLDER}
 RUN tar zxf /tmp/linux.tar.gz -C ${PS_INSTALL_FOLDER}
 
 # Start a new stage so we lose all the tar.gz layers from the final image
-FROM ubuntu:20.04 AS powershell
+FROM ubuntu:18.04 AS powershell
 
 ARG PS_VERSION=7.1.3
 ARG PS_INSTALL_VERSION=7
 
 # Copy only the files we need from the previous stage
-COPY --from=installer-env ["/opt/microsoft/powershell", "/opt/microsoft/powershell"]
+COPY --from=installer-base ["/opt/microsoft/powershell", "/opt/microsoft/powershell"]
 
 # Define Args and Env needed to create links
 ARG PS_INSTALL_VERSION=7
