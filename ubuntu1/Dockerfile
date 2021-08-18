@@ -1,0 +1,59 @@
+FROM ubuntu:18.04 AS installer-base
+
+# Define Args for the needed to add the package
+
+# Define ENVs for Localization/Globalization
+ENV LANG=en_US.UTF-8 \
+    # set a fixed location for the Module analysis cache
+    PSModuleAnalysisCachePath=/var/cache/microsoft/powershell/PSModuleAnalysisCache/ModuleAnalysisCache 
+
+# Install dependencies and clean up
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
+    # wget is required to grab the Linux package
+        wget \
+    # less is required for help in powershell
+        less \
+    # requied to setup the locale
+        locales \
+    # required for SSL
+        ca-certificates \
+        gss-ntlmssp \
+    # PowerShell remoting over SSH and dependencies
+        openssh-client \
+        apt-transport-https \
+        software-properties-common 
+
+# Download Powershell Package        
+RUN wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb  \
+    && dpkg -i  packages-microsoft-prod.deb \
+    && apt-get update \
+    && add-apt-repository universe \
+    && apt-get install -y powershell=7.1.3-1.ubuntu.18.04 \
+    && locale-gen $LANG && update-locale \
+    # remove powershell package
+   # && rm /tmp/powershell.deb \
+    # intialize powershell module cache
+    # and disable telemetry
+    && export POWERSHELL_TELEMETRY_OPTOUT=1 \
+    && pwsh \
+        -NoLogo \
+        -NoProfile \
+        -Command " \
+          \$ErrorActionPreference = 'Stop' ; \
+          \$ProgressPreference = 'SilentlyContinue' ; \
+          while(!(Test-Path -Path \$env:PSModuleAnalysisCachePath)) {  \
+            Write-Host "'Waiting for $env:PSModuleAnalysisCachePath'" ; \
+            Start-Sleep -Seconds 6 ; \
+          }"
+
+# Set PowerShell to be the shell to execute PS Cmdlets
+SHELL [ "pwsh", "-command" ]
+
+# Install Az and Az.Automation modules
+RUN  Install-Module -Name Az -Repository PSGallery -Force
+
+# Use PowerShell as the default shell
+# Use array to avoid Docker prepending /bin/sh -c
+
+ CMD [ "pwsh" ]
